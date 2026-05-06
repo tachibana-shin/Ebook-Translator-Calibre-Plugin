@@ -23,8 +23,8 @@ jobs:
           ref: ${{ env.branch }}
       - name: Build
         run: |
-          file_name=Ebook-Translator-Calibre-Plugin_${{ github.ref_name }}.zip
-          git archive --format=zip --output=$file_name ${{ env.branch }}
+          make all
+          mv plugin.zip Ebook-Translator-Calibre-Plugin_${{ github.ref_name }}.zip
       - name: Changelog
         run: |
           {

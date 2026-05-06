@@ -4,3 +4,6 @@
 _site
 *.pyc
 tags
+__pycache__
+/libs
+/plugin.zip
