@@ -314,6 +314,8 @@ class TranslationSetting(QDialog):
                 merge_mode='length' if mode.startswith('Legacy') else 'paragraph'))
         self.merge_max_paragraphs.valueChanged.connect(
             lambda value: self.config.update(merge_max_paragraphs=value))
+        self.merge_length.valueChanged.connect(
+            lambda value: self.config.update(merge_length=value))
         merge_format_preservation.clicked.connect(
             lambda checked: self.config.update(merge_format_preservation=checked))
 
