@@ -78,9 +78,10 @@ class ParagraphMerger:
 
         chunks = []
         current_chunk = SmartChunk(
-            self.config.max_paragraphs,
-            self.config.max_characters
-        )
+                        self.config.max_paragraphs,
+                        self.config.max_characters,
+                        self.config.separator
+                    )
 
         for para in paragraphs:
             # Try to add paragraph normally
@@ -94,16 +95,18 @@ class ParagraphMerger:
                 current_chunk.force_add(para)
                 chunks.append(current_chunk)
                 current_chunk = SmartChunk(
-                    self.config.max_paragraphs,
-                    self.config.max_characters
-                )
+                        self.config.max_paragraphs,
+                        self.config.max_characters,
+                        self.config.separator
+                    )
             else:
                 # Normal case: current chunk is full
                 chunks.append(current_chunk)
                 current_chunk = SmartChunk(
-                    self.config.max_paragraphs,
-                    self.config.max_characters
-                )
+                        self.config.max_paragraphs,
+                        self.config.max_characters,
+                        self.config.separator
+                    )
                 # Try adding to new chunk
                 if not current_chunk.add(para):
                     # Still can't add (overflow paragraph)
@@ -111,7 +114,8 @@ class ParagraphMerger:
                     chunks.append(current_chunk)
                     current_chunk = SmartChunk(
                         self.config.max_paragraphs,
-                        self.config.max_characters
+                        self.config.max_characters,
+                        self.config.separator
                     )
 
         # Add last chunk if not empty

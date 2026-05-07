@@ -75,14 +75,17 @@ class SmartChunk:
     to handle edge cases where a single paragraph is very long.
     """
 
-    def __init__(self, max_paragraphs: int = 50, max_characters: int = 3000):
+    def __init__(self, max_paragraphs: int = 50, max_characters: int = 3000,
+                 separator: str = '\n\n'):
         """
         Args:
             max_paragraphs: Maximum number of paragraphs in this chunk
             max_characters: Maximum number of characters in this chunk
+            separator: Separator string between paragraphs
         """
         self.max_paragraphs = max_paragraphs
         self.max_characters = max_characters
+        self.separator = separator
         self.paragraphs: List[Paragraph] = []
         self._total_length = 0
         self._formatted_text = None
@@ -136,7 +139,9 @@ class SmartChunk:
             return False
 
         # Check character count limit
-        new_length = self.total_length + paragraph.length
+        # Final text is: separator.join(parts) + separator, so even first paragraph adds separator
+        separator_overhead = len(self.separator)
+        new_length = self.total_length + paragraph.length + separator_overhead
         if new_length > self.max_characters:
             return False
 
@@ -156,7 +161,8 @@ class SmartChunk:
             return False
 
         self.paragraphs.append(paragraph)
-        self._total_length += paragraph.length
+        # Final text always includes trailing separator
+        self._total_length += paragraph.length + len(self.separator)
         self._formatted_text = None  # Invalidate cached formatted text
         return True
 
@@ -171,7 +177,8 @@ class SmartChunk:
             paragraph: The paragraph to add
         """
         self.paragraphs.append(paragraph)
-        self._total_length += paragraph.length
+        # Final text always includes trailing separator
+        self._total_length += paragraph.length + len(self.separator)
         self._formatted_text = None  # Invalidate cached formatted text
         self._is_overflow = True
 
