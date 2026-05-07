@@ -14,7 +14,7 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 from chunk import Paragraph, SmartChunk
-from smart_merge import SmartMerger, SmartMergeConfig
+from paragraph_merge import ParagraphMerger, ParagraphMergeConfig
 from format_handler import FormatHandler
 
 
@@ -97,11 +97,11 @@ def test_smart_merge():
     print("Test 2: Smart Merge - Reducing API Calls")
     print("=" * 70)
 
-    config = SmartMergeConfig()
+    config = ParagraphMergeConfig()
     config.max_paragraphs = 3
     config.max_characters = 300
 
-    merger = SmartMerger(config)
+    merger = ParagraphMerger(config)
 
     # Simulate a novel with 10 paragraphs
     paragraphs = [
@@ -188,10 +188,10 @@ def test_overflow_paragraph():
     print("Test 3: Overflow Paragraph Handling")
     print("=" * 70)
 
-    config = SmartMergeConfig()
+    config = ParagraphMergeConfig()
     config.max_characters = 500  # Low limit to test overflow
 
-    merger = SmartMerger(config)
+    merger = ParagraphMerger(config)
 
     # Create a very long paragraph (simulating a long description)
     long_paragraph = (
