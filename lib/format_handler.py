@@ -206,6 +206,10 @@ class FormatHandler:
         # Add opening marker
         text_parts.append(open_marker)
 
+        # Add element's own text content
+        if element.text:
+            text_parts.append(element.text)
+
         # Process children recursively (formatting can be nested)
         for child in element:
             if self._should_preserve_element(child):
