@@ -44,6 +44,8 @@ defaults: dict[str, Any] = {
     'glossary_path': None,
     'merge_enabled': False,
     'merge_length': 1800,
+    'llm_merge_enabled': False,
+    'llm_merge_count': 3,
     'ebook_metadata': {},
     'search_paths': [],
     'context_enabled': True,

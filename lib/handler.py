@@ -2,18 +2,18 @@ import sys
 import asyncio
 import concurrent.futures
 
-from .utils import log, traceback_error
+from .utils import traceback_error
 from .exception import TranslationCanceled
 
 
 class Handler:
-    def __init__(self, paragraphs, concurrency_limit, translate_paragraph,
+    def __init__(self, paragraphs_batches, concurrency_limit, translate_paragraph,
                  process_translation, request_interval):
         self.queue = asyncio.Queue()
         self.done_queue = asyncio.Queue()
 
-        for paragraph in paragraphs:
-            self.queue.put_nowait(paragraph)
+        for batch in paragraphs_batches:
+            self.queue.put_nowait(batch)
 
         self.concurrency_limit = concurrency_limit or self.queue.qsize()
         self.translate_paragraph = translate_paragraph
@@ -22,21 +22,26 @@ class Handler:
 
     async def translation_worker(self):
         while True:
-            paragraph = await self.queue.get()
+            batch = await self.queue.get()
             try:
                 await asyncio.get_running_loop().run_in_executor(
-                    None, self.translate_paragraph, paragraph)
-                paragraph.error = None
-                if self.queue.qsize() > 0 and not paragraph.is_cache:
-                    await asyncio.sleep(self.request_interval)
-                self.done_queue.put_nowait(paragraph)
+                    None, self.translate_paragraph, batch)
+                for paragraph in batch:
+                    paragraph.error = None
+                if self.queue.qsize() > 0:
+                    has_cache = any(p.is_cache for p in batch if hasattr(p, 'is_cache'))
+                    if not has_cache:
+                        await asyncio.sleep(self.request_interval)
+                for paragraph in batch:
+                    self.done_queue.put_nowait(paragraph)
                 self.queue.task_done()
             except TranslationCanceled:
                 await self.cancel_tasks()
                 break
             except Exception:
-                paragraph.error = traceback_error()
-                self.done_queue.put_nowait(paragraph)
+                for paragraph in batch:
+                    paragraph.error = traceback_error()
+                    self.done_queue.put_nowait(paragraph)
                 self.queue.task_done()
 
     async def processing_worker(self):

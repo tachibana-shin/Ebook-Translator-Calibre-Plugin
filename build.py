@@ -28,7 +28,7 @@ def create_zip():
                 arcname = os.path.relpath(filepath, base_dir)
                 z.write(filepath, arcname)
 
-    print(f'📦 {ZIP_NAME} created at {zip_path}')
+    print(f'{ZIP_NAME} created at {zip_path}')
 
 
 if __name__ == '__main__':

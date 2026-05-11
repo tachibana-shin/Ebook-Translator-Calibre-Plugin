@@ -224,7 +224,7 @@ class TestTranslation(unittest.TestCase):
 
     def test_translate_paragraph_cached(self):
         self.paragraph.translation = '你好世界'
-        self.translation.translate_paragraph(self.paragraph)
+        self.translation.translate_paragraph([self.paragraph])
 
         self.assertTrue(self.paragraph.is_cache)
 
@@ -236,7 +236,7 @@ class TestTranslation(unittest.TestCase):
         self.glossary.restore.return_value = '你好呀世界'
         self.translator.name = 'Google'
         self.translator.get_target_lang.return_value = 'zh'
-        self.translation.translate_paragraph(self.paragraph)
+        self.translation.translate_paragraph([self.paragraph])
 
         self.streaming.assert_has_calls([call(''), call('Translating...')])
         self.glossary.restore.assert_called_with('你好世界')
@@ -255,7 +255,7 @@ class TestTranslation(unittest.TestCase):
         self.glossary.restore.return_value = '你好呀世界'
         self.paragraph.translation = ''
         self.translation.total = 1
-        self.translation.translate_paragraph(self.paragraph)
+        self.translation.translate_paragraph([self.paragraph])
 
         self.streaming.assert_has_calls([
             call(''), call('Translating...'), call(''), call('你'),
@@ -269,7 +269,7 @@ class TestTranslation(unittest.TestCase):
         mock_time.reset_mock()
         self.paragraph.translation = ''
         self.translation.total = 2
-        self.translation.translate_paragraph(self.paragraph)
+        self.translation.translate_paragraph([self.paragraph])
 
         self.streaming.assert_has_calls([call(''), call('Translating...')])
         mock_time.sleep.assert_not_called()
@@ -280,7 +280,7 @@ class TestTranslation(unittest.TestCase):
         self.translation.set_fresh(True)
         self.translator.merge_enabled = False
 
-        self.translation.translate_paragraph(self.paragraph)
+        self.translation.translate_paragraph([self.paragraph])
 
         self.paragraph.do_aligment.assert_not_called()
 
@@ -289,6 +289,6 @@ class TestTranslation(unittest.TestCase):
         self.translator.separator = '\n\n'
         self.translator.merge_enabled = True
 
-        self.translation.translate_paragraph(self.paragraph)
+        self.translation.translate_paragraph([self.paragraph])
 
         self.paragraph.do_aligment.assert_called_once_with('\n\n')

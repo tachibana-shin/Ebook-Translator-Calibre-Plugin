@@ -73,7 +73,7 @@ class ProgressBar:
 
 
 class Translation:
-    def __init__(self, translator, glossary):
+    def __init__(self, translator: Base, glossary: Glossary):
         self.translator = translator
         self.glossary = glossary
 
@@ -137,7 +137,7 @@ class Translation:
         return self.translator.max_error_count > 0 and \
             self.abort_count >= self.translator.max_error_count
 
-    def translate_text(self, row, text, retry=0, interval=0):
+    def translate_text(self, row, texts, retry=0, interval=0):
         """Translation engine service error code documentation:
         * https://cloud.google.com/apis/design/errors
         * https://www.deepl.com/docs-api/api-access/error-handling/
@@ -148,7 +148,7 @@ class Translation:
         if self.cancel_request():
             raise TranslationCanceled(_('Translation canceled.'))
         try:
-            translation = self.translator.translate(text)
+            translation = self.translator.translate(texts)
             self.abort_count = 0
             return translation
         except Exception as e:
@@ -161,7 +161,7 @@ class Translation:
             retry += 1
             interval += 5
             # Logging any errors that occur during translation.
-            logged_text = text[:200] + '...' if len(text) > 200 else text
+            logged_text = texts[0][:200] + '...' if isinstance(texts, list) and texts else (texts[:200] + '...' if len(texts) > 200 else texts)
             error_messages = [
                 sep(), _('Original: {}').format(logged_text), sep('┈'),
                 _('Status: Failed {} times / Sleeping for {} seconds')
@@ -173,9 +173,70 @@ class Translation:
             if self.translator.match_error(str(e)):
                 raise TranslationCanceled(_('Translation canceled.'))
             time.sleep(interval)
-            return self.translate_text(row, text, retry, interval)
+            return self.translate_text(row, texts, retry, interval)
 
-    def translate_paragraph(self, paragraph):
+    def translate_paragraph(self, batch):
+        if getattr(self.translator, 'batch_size', 0) < 1:
+            self.translate_single_paragraph(batch[0])
+        else:
+            self.translate_batch_paragraph(batch)
+
+    def translate_batch_paragraph(self, batch):
+        if self.cancel_request():
+            raise TranslationCanceled(_('Translation canceled.'))
+        paragraphs_to_translate = []
+        texts = []
+        for paragraph in batch:
+            if paragraph.translation and not self.fresh:
+                paragraph.is_cache = True
+            paragraphs_to_translate.append(paragraph)
+            texts.append(self.glossary.replace(paragraph.original))
+
+        if not texts:
+            return
+
+        if self.context_enabled and self.context_manager:
+            if self.context_manager.position == 'after':
+                self.translator.local_state.current_row = int(paragraphs_to_translate[-1].id)
+            else:
+                self.translator.local_state.current_row = int(paragraphs_to_translate[0].id)
+
+        self.streaming('')
+        self.streaming(_('Translating {} paragraphs...').format(len(texts)))
+
+        llm_merge_enabled = getattr(self.translator, 'llm_merge_enabled', False)
+        if llm_merge_enabled:
+            merged_text = '\n\n'.join(texts)
+            translation = self.translate_text(paragraphs_to_translate[0].id, merged_text)
+            if isinstance(translation, GeneratorType):
+                translation = ''.join([char for char in translation])
+            translation = self.glossary.restore(translation)
+            merged_translations = translation.split('\n\n')
+            translations = [t.strip() for t in merged_translations]
+            while len(translations) < len(paragraphs_to_translate):
+                translations.append('')
+        else:
+            translations = self.translate_text(paragraphs_to_translate[0].id, texts)
+            if isinstance(translations, GeneratorType):
+                translations = ''.join([char for char in translations])
+                translations = [translations]
+            elif isinstance(translations, str):
+                translations = [translations]
+
+            if isinstance(translations, list):
+                translations = [self.glossary.restore(t) for t in translations]
+            else:
+                translations = []
+
+        for i, paragraph in enumerate(paragraphs_to_translate):
+            paragraph.translation = translations[i].strip() if i < len(translations) else ''
+            if self.translator.merge_enabled:
+                paragraph.do_aligment(self.translator.separator)
+            paragraph.engine_name = self.translator.name
+            paragraph.target_lang = self.translator.get_target_lang()
+            paragraph.is_cache = False
+
+    def translate_single_paragraph(self, paragraph):
         if self.cancel_request():
             raise TranslationCanceled(_('Translation canceled.'))
         if paragraph.translation and not self.fresh:
@@ -256,10 +317,21 @@ class Translation:
 
         if self.total < 1:
             raise Exception(_('There is no content need to translate.'))
+
+        batch_size = getattr(self.translator, 'batch_size', 0)
+        if batch_size > 0:
+            paragraphs_batches = [
+                paragraphs[i:i + batch_size]
+                for i in range(0, len(paragraphs), batch_size)
+            ]
+            self.log(_('Batch mode enabled: {} batches').format(len(paragraphs_batches)))
+        else:
+            paragraphs_batches = [[p] for p in paragraphs]
+
         self.progress_bar.load(self.total)
 
         handler = Handler(
-            paragraphs, self.translator.concurrency_limit,
+            paragraphs_batches, self.translator.concurrency_limit,
             self.translate_paragraph, self.process_translation,
             self.translator.request_interval)
         handler.handle()

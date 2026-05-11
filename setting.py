@@ -260,6 +260,29 @@ class TranslationSetting(QDialog):
         merge_enabled.clicked.connect(
             lambda checked: self.config.update(merge_enabled=checked))
 
+        # LLM Merge Translate
+        llm_merge_group = QGroupBox(
+            '%s %s' % (_('LLM Merge Translate'), _('(For LLM engines)')))
+        llm_merge_layout = QHBoxLayout(llm_merge_group)
+        llm_merge_enabled = QCheckBox(_('Enable'))
+        self.llm_merge_count = QSpinBox()
+        self.llm_merge_count.setRange(2, 20)
+        llm_merge_layout.addWidget(llm_merge_enabled)
+        llm_merge_layout.addWidget(self.llm_merge_count)
+        llm_merge_layout.addWidget(QLabel(_(
+            'Number of paragraphs to merge for LLM translation.')))
+        llm_merge_layout.addStretch(1)
+        layout.addWidget(llm_merge_group)
+
+        self.disable_wheel_event(self.llm_merge_count)
+
+        self.llm_merge_count.setValue(self.config.get('llm_merge_count'))
+        llm_merge_enabled.setChecked(self.config.get('llm_merge_enabled'))
+        llm_merge_enabled.clicked.connect(
+            lambda checked: self.config.update(llm_merge_enabled=checked))
+        self.llm_merge_count.valueChanged.connect(
+            lambda value: self.config.update(llm_merge_count=value))
+
         # Network Proxy
         proxy_group = QGroupBox(_('Network Proxy'))
         proxy_layout = QHBoxLayout()

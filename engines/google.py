@@ -15,7 +15,7 @@ from .languages import google, gemini
 
 load_translations()  # type: ignore
 
-
+# This extract from extension Google Translate. Not recommend because only mode line by line
 class GoogleFreeTranslateNew(Base):
     name = 'Google(Free)New'
     alias = 'Google (Free) - New'
@@ -55,12 +55,13 @@ class GoogleFreeTranslateNew(Base):
 
 class GoogleFreeTranslateHtml(Base):
     name = 'Google(Free)Html'
-    alias = 'Google (Free) - HTML'
+    alias = 'Google (Free) - HTML (Free Recommend)'
     free = True
     lang_codes = Base.load_lang_codes(google)
     endpoint = 'https://translate-pa.googleapis.com/v1/translateHtml'
     need_api_key = False
     support_html = True
+    batch_size = 130
 
     def get_headers(self):
         return {
@@ -77,15 +78,15 @@ class GoogleFreeTranslateHtml(Base):
     def get_body(self, text):
         return json.dumps([
             [
-                [text],
+                text if isinstance(text, list) else [text],
                 self._get_source_code(),
                 self._get_target_code()
             ],
-            "wt_lib"
+            "te_lib"
         ])
 
     def get_result(self, response):
-        return json.loads(response)[0][0]
+        return json.loads(response)[0]
 
 
 class GoogleFreeTranslate(Base):

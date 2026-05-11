@@ -42,6 +42,7 @@ class Base:
     request_attempt: int = 3
     request_timeout: float = 10.0
     max_error_count: int = 10
+    batch_size: int = 0  # 0 = no batch support, >0 = max paragraphs per batch
 
     def __init__(self):
         self.source_lang: str
@@ -53,6 +54,8 @@ class Base:
         self.proxy_port: int | None = None
 
         self.merge_enabled = False
+        self.llm_merge_enabled = self.config.get('llm_merge_enabled', False)
+        self.llm_merge_count = self.config.get('llm_merge_count', 3)
         self.api_keys: list = self.config.get('api_keys', [])[:]
         self.bad_api_keys = []
         self.api_key = self.get_api_key()

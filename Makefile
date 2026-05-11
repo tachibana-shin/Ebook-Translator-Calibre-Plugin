@@ -7,5 +7,10 @@ $(ZIP_NAME):
 	@python build.py
 	@echo "Done $(ZIP_NAME)"
 
+test:
+	make all
+	@cp plugin.zip "C:\Users\Admin\AppData\Roaming\calibre\plugins\Ebook Translator.zip"
+	@echo "Done $(ZIP_NAME)"
+	@calibre-debug test.py
 clean:
 	@rm -f $(ZIP_NAME)
